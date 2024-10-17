@@ -1,0 +1,4 @@
+spacy
+Pillow
+unidecode
+es_core_news_sm
