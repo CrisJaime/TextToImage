@@ -18,7 +18,7 @@ patterns = [
 matcher.add("NOUNS_CORRECTION", patterns)
 
 # Input text
-text = "Tengo 27 años, mi hermana tiene 25 y mi padre tiene 55 años"
+text = "Tengo 27 años, mi hermana tiene 25 y mi padre tiene 55 años."
 numImagen = 9
 
 # Directories for word images based on POS tag
@@ -42,7 +42,7 @@ words_dir = {
 
 # Special URLs for specific symbols and words
 special_symbols_urls = {
-    ".": "Palabras\CategoriaGramatical(POS)\Puntuacion\Punto.JPG", ",": "Palabras\CategoriaGramatical(POS)\Puntuacion\Coma.JPG"}
+    ".": "Palabras\CategoriaGramatical(POS)/Puntuacion/Punto.JPG", ",": "Palabras/CategoriaGramatical(POS)/Puntuacion/Coma.JPG"}
 special_word_urls = {
     "con": "Palabras/CategoriaGramatical(POS)/Preposicion/Con_.JPG"}
 
@@ -172,7 +172,7 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
     # Create a dictionary to map letters to images
     letters_dir = "Letters"
     letter_to_image = {letter: os.path.join(
-        letters_dir, f"{letter}.jpg") for letter in set(unidecode(text))}
+        letters_dir, f"{letter}.jpg") for letter in set(text)}
     
     # List to store images and spelled letters
     images_and_letters = []
@@ -204,6 +204,31 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
                     print_to_log(f"[INFO] No image generated for component: {component}")
             continue
 
+
+        if token_tag == "PUNCT":
+            punct_image_path = special_symbols_urls.get(text.text)
+            
+            if punct_image_path:
+                
+                if os.path.exists(punct_image_path):
+                    punct_image = Image.open(punct_image_path).resize(desired_size)
+                    
+                    # Dibujar el signo de puntuación en la imagen
+                    draw = ImageDraw.Draw(punct_image)
+                    textbbox = draw.textbbox((0, 0), text.text, font=font)
+                    text_x = (punct_image.width - (textbbox[2] - textbbox[0])) / 2
+                    text_y = (punct_image.height - (textbbox[3] - textbbox[1]))/2
+                    draw.text((text_x, text_y), text.text, font=font, fill="black")
+                    print(text_x,text_y)
+                    
+                    images_and_letters.append(punct_image)
+                    print_to_log(f"[INFO] Generating image for component: {text.text}")
+                else:
+                    print_to_log(f"[INFO] No image generated for component: {text.text}")
+            else:
+                print_to_log(f"[INFO] No image generated for component: {text.text}")
+            continue  # Saltar al siguiente token si ya manejamos el signo de puntuación
+    
         # Handle non-NUM tokens
         word_image_path = get_word_image(text, token_tag)
         print_to_log("=" * 10)
@@ -225,7 +250,7 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
             print_to_log("=" * 10)
         else:
             # If no word image, process individual letters
-            for letra in unidecode(text.text):
+            for letra in text.text:
                 # Correct letter if necessary
                 corrected_letra = get_correct_letter(letra)
                 
@@ -243,7 +268,7 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
                 draw = ImageDraw.Draw(letter_image)
                 textbbox = draw.textbbox((0, 0), letra, font=font)
                 text_x = (letter_image.width - (textbbox[2] - textbbox[0])) / 2
-                text_y = (letter_image.height - (textbbox[3] - textbbox[1])) / 2
+                text_y = (letter_image.height - (textbbox[3] - textbbox[1])) -10
                 draw.text((text_x, text_y), letra, font=font, fill="black")
                 
                 images_and_letters.append(letter_image)
@@ -257,11 +282,24 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
     image_width_images = desired_size[0] * max_images_per_row
     image_height_images = desired_size[1] * num_rows_images
 
+    # # Calculate text size
+    # draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))  # Create a dummy image for size calculation
+    # textbbox = draw.textbbox((0, 0), text, font=font)
+    # text_height = textbbox[3] - textbbox[1] + 10  # Add some padding to the text height
+    
+    # # Total height = height for text + height for images
+    # total_height = text_height + image_height_images
+    
     # Create a blank image for the final output
     final_image = Image.new('RGB', (image_width_images, image_height_images), (255, 255, 255))
 
+    # # Draw the input text at the top of the image
+    # draw = ImageDraw.Draw(final_image)
+    # text_x = (image_width_images - (textbbox[2] - textbbox[0])) / 2  # Center the text horizontally
+    # draw.text((text_x, 5), text, font=font, fill="black")  # Draw the text at the top with a small margin
+
     # Offsets to track horizontal and vertical positioning for the images and spelled letters
-    x_offset_images, y_offset_images = 0, 0
+    x_offset_images, y_offset_images = 0, 0  # Start pasting images below the text
 
     # Paste the images and spelled letters into the final image
     for img in images_and_letters:
