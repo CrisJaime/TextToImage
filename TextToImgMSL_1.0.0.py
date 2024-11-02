@@ -19,6 +19,7 @@ matcher.add("NOUNS_CORRECTION", patterns)
 
 # Input text
 text = "Tengo 27 años, mi hermana tiene 25 y mi padre tiene 55 años."
+final_phrase=text
 numImagen = 9
 
 # Directories for word images based on POS tag
@@ -60,7 +61,7 @@ desired_size = (100, 100)
 max_images_per_row = 15
 
 # Font settings
-font = ImageFont.truetype("arial.ttf", 18)
+font = ImageFont.truetype("arial.ttf", 20)
 
 # Log file for output
 log_file_path = "log.txt"
@@ -281,22 +282,9 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
     # Dimensions of the final image for the images and spelled letters
     image_width_images = desired_size[0] * max_images_per_row
     image_height_images = desired_size[1] * num_rows_images
-
-    # # Calculate text size
-    # draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))  # Create a dummy image for size calculation
-    # textbbox = draw.textbbox((0, 0), text, font=font)
-    # text_height = textbbox[3] - textbbox[1] + 10  # Add some padding to the text height
-    
-    # # Total height = height for text + height for images
-    # total_height = text_height + image_height_images
     
     # Create a blank image for the final output
     final_image = Image.new('RGB', (image_width_images, image_height_images), (255, 255, 255))
-
-    # # Draw the input text at the top of the image
-    # draw = ImageDraw.Draw(final_image)
-    # text_x = (image_width_images - (textbbox[2] - textbbox[0])) / 2  # Center the text horizontally
-    # draw.text((text_x, 5), text, font=font, fill="black")  # Draw the text at the top with a small margin
 
     # Offsets to track horizontal and vertical positioning for the images and spelled letters
     x_offset_images, y_offset_images = 0, 0  # Start pasting images below the text
@@ -311,6 +299,24 @@ with open(log_file_path, 'w', encoding="utf-8") as log_file:
             x_offset_images = 0
             y_offset_images += desired_size[1]
 
+      # Size of the blank text box at the end (e.g., 100 px height)
+    blank_text_box_height = 100
+
+    # Adjust total height to include the blank text box at the end
+    total_height_with_blank_box = image_height_images + blank_text_box_height
+
+    # Create a new image for the final output with extra space for the blank box
+    final_image_with_blank_box = Image.new(
+        'RGB', (image_width_images, total_height_with_blank_box), (255, 255, 255))
+
+    # Paste the final image containing the words and images onto the new image
+    final_image_with_blank_box.paste(final_image, (0, 0))
+
+    # Draw the blank text box (in this case, it's already blank, but you can add text if needed)
+    draw = ImageDraw.Draw(final_image_with_blank_box)
+
+    draw.text((10, image_height_images + 10), "Final phrase: " + final_phrase, font=font, fill="black")
+    
     # Save and show the final combined image
-    final_image.save("Pruebas/classification.jpg")
-    final_image.show()
+    final_image_with_blank_box.save("Pruebas/classification.jpg")
+    final_image_with_blank_box.show()
